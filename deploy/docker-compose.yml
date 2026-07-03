@@ -1,0 +1,21 @@
+# Minimal single-container deployment. Copy vexpay.env.example to vexpay.env,
+# fill in your values, then: docker compose up -d
+services:
+  vexpay:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: vexpay/gateway:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - vexpay.env
+    volumes:
+      # Persist the SQLite database outside the container.
+      - vexpay-data:/data
+    environment:
+      VEXPAY_DATABASE_URL: "sqlite:/data/vexpay.db"
+
+volumes:
+  vexpay-data:

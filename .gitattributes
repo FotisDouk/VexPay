@@ -1,0 +1,9 @@
+# Normalize line endings to LF for all text files.
+* text=auto eol=lf
+
+# Explicitly binary (never touched).
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary

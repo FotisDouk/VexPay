@@ -1,0 +1,30 @@
+# Binaries
+/vexpay
+/vexpay.exe
+/dist/
+*.exe
+*.test
+
+# Local data / runtime
+*.db
+*.db-shm
+*.db-wal
+/data/
+vexpay.yaml
+vexpay.local.yaml
+.env
+.env.*
+
+# Go
+/vendor/
+*.out
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Node (dashboard build)
+node_modules/
+/web/dist/

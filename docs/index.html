@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VexPay Documentation</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #14171f;
+      --muted: #5b6472;
+      --accent: #4f46e5;
+      --card: #f6f7f9;
+      --border: #e4e7ec;
+      --code-bg: #f0f1f4;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0e1116;
+        --fg: #e7eaf0;
+        --muted: #9aa4b2;
+        --accent: #8b85f7;
+        --card: #161a21;
+        --border: #262c36;
+        --code-bg: #1b2028;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+    }
+    header {
+      padding: 3rem 1.5rem 2rem;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+    .logo { font-weight: 800; font-size: 1.6rem; letter-spacing: -0.02em; }
+    .logo span { color: var(--accent); }
+    .tag { color: var(--muted); margin-top: .25rem; }
+    main { max-width: 860px; margin: 0 auto; padding: 0 1.5rem 4rem; }
+    h2 { margin-top: 2.5rem; font-size: 1.25rem; letter-spacing: -0.01em; }
+    a { color: var(--accent); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.1rem;
+    }
+    .card h3 { margin: 0 0 .35rem; font-size: 1rem; }
+    .card p { margin: 0; color: var(--muted); font-size: .9rem; }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      overflow-x: auto;
+    }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .9em; }
+    .badge {
+      display: inline-block;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: .15rem .7rem;
+      font-size: .8rem;
+      color: var(--muted);
+    }
+    footer { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; color: var(--muted); font-size: .85rem; border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">Vex<span>Pay</span></div>
+    <p class="tag">Self-hosted, non-custodial crypto payments — fast, secure, and easy.</p>
+    <p><span class="badge">Early development</span></p>
+  </header>
+
+  <main>
+    <p>
+      VexPay is a payment gateway you run on your own server. Point it at your own wallet, get
+      an API key, and start accepting cryptocurrency. Funds go <strong>directly to your
+      wallet</strong> — VexPay never holds your private keys or your money.
+    </p>
+
+    <h2>Quick start</h2>
+    <pre><code>git clone https://github.com/vexarnetwork/vexpay
+cd vexpay
+go run ./cmd/vexpay
+
+curl http://localhost:8080/healthz</code></pre>
+
+    <h2>Guides</h2>
+    <div class="grid">
+      <div class="card"><h3>Self-hosting</h3><p>Run with Docker or the bare binary.</p></div>
+      <div class="card"><h3>Wallet setup</h3><p>Connect your xpub, address, or view key per chain.</p></div>
+      <div class="card"><h3>API reference</h3><p>The REST API, generated from the OpenAPI spec.</p></div>
+      <div class="card"><h3>Webhooks</h3><p>Verify signatures and handle payment events.</p></div>
+      <div class="card"><h3>Sandbox &amp; testing</h3><p>Simulate payments without spending real coins.</p></div>
+      <div class="card"><h3>Security model</h3><p>Why non-custodial means a smaller blast radius.</p></div>
+    </div>
+
+    <h2>Documentation is a first-class feature</h2>
+    <p>
+      This site is plain static HTML/CSS/JS with no build step. Open it directly in a browser,
+      or serve the <code>docs/</code> folder with any static file server. The pages above are
+      placeholders that fill in as VexPay grows.
+    </p>
+  </main>
+
+  <footer>
+    VexPay is licensed under AGPL-3.0. &nbsp;·&nbsp; A VexarNetwork project.
+  </footer>
+</body>
+</html>
