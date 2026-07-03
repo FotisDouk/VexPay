@@ -9,6 +9,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
+
+	"github.com/vexarnetwork/vexpay/internal/invoice"
 )
 
 // Store is the top-level persistence handle. Repositories for invoices,
@@ -16,17 +18,17 @@ import (
 type Store interface {
 	// Ping verifies the backend is reachable.
 	Ping(ctx context.Context) error
+	// Invoices returns the invoice repository backed by this store.
+	Invoices() invoice.Repository
 	// Close releases any resources held by the backend.
 	Close() error
 }
 
 // Open selects and initialises a Store from a database URL. Supported forms:
 //
-//	sqlite:<path>       e.g. sqlite:vexpay.db
-//	postgres://...      standard libpq DSN
-//
-// Phase 0 ships an in-memory backend for the "memory:" scheme and treats
-// "sqlite:" as memory-backed until the driver lands in Phase 1.
+//	memory:             in-process, non-persistent (tests, sandbox)
+//	sqlite:<path>       file-backed SQLite (default); use ":memory:" for RAM
+//	postgres://...      standard libpq DSN (not yet implemented)
 func Open(databaseURL string) (Store, error) {
 	scheme, rest, ok := strings.Cut(databaseURL, ":")
 	if !ok {
@@ -36,9 +38,10 @@ func Open(databaseURL string) (Store, error) {
 	case "memory":
 		return newMemory(), nil
 	case "sqlite":
-		// TODO(phase1): back this with modernc.org/sqlite at path `rest`.
-		_ = rest
-		return newMemory(), nil
+		if rest == "" {
+			return nil, fmt.Errorf("sqlite url requires a path, e.g. sqlite:vexpay.db")
+		}
+		return openSQLite(rest)
 	case "postgres", "postgresql":
 		return nil, fmt.Errorf("postgres backend not implemented yet")
 	default:

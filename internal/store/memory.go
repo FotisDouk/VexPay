@@ -3,17 +3,21 @@ package store
 import (
 	"context"
 	"sync"
+
+	"github.com/vexarnetwork/vexpay/internal/invoice"
 )
 
-// memory is an in-process Store backend. It is used for tests, the sandbox, and
-// as the Phase 0 placeholder until the SQLite driver is wired in. It is safe for
-// concurrent use.
+// memory is an in-process Store backend used for tests and the sandbox. It is
+// safe for concurrent use.
 type memory struct {
 	mu     sync.RWMutex
 	closed bool
+	repo   *invoice.MemRepository
 }
 
-func newMemory() *memory { return &memory{} }
+func newMemory() *memory { return &memory{repo: invoice.NewMemRepository()} }
+
+func (m *memory) Invoices() invoice.Repository { return m.repo }
 
 func (m *memory) Ping(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {

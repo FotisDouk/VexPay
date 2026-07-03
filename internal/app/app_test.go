@@ -43,6 +43,7 @@ func TestSandboxEndToEnd(t *testing.T) {
 	defer hookSrv.Close()
 
 	cfg := config.Default()
+	cfg.DatabaseURL = "memory:"
 	cfg.EnableSandbox = true
 	cfg.SandboxConfirmations = 1
 	cfg.SandboxAPIKey = sandboxKey

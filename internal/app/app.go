@@ -74,7 +74,7 @@ func Build(cfg config.Config) (*App, error) {
 	dispatcher := webhook.NewDispatcher(webhook.Options{Resolver: resolver})
 
 	invoices := invoice.NewService(invoice.Options{
-		Repo:     invoice.NewMemRepository(),
+		Repo:     st.Invoices(),
 		Registry: registry,
 		Emitter:  dispatcher,
 		Expiry:   cfg.InvoiceExpiry,
