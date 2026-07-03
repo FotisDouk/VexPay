@@ -51,9 +51,51 @@ All settings are read from `VEXPAY_`-prefixed environment variables.
 | `VEXPAY_INVOICE_EXPIRY`        | `15m`                   | Invoice / locked-rate validity window.        |
 | `VEXPAY_REQUEST_TIMEOUT`       | `30s`                   | Per-request timeout.                          |
 | `VEXPAY_ADMIN_SESSION_SECRET`  | —                       | Signs dashboard sessions (required in prod).  |
+| `VEXPAY_WATCH_INTERVAL`        | `15s`                   | How often open invoices are polled on-chain.  |
+| `VEXPAY_ENABLE_BITCOIN`        | `true`                  | Register the Bitcoin mainnet/testnet adapters.|
+| `VEXPAY_BTC_EXPLORER_URL`      | `https://mempool.space` | Bitcoin explorer/Esplora API (or your node).  |
+| `VEXPAY_ENABLE_SANDBOX`        | `true`                  | Register the mock chain + payment simulator.  |
+| `VEXPAY_COINGECKO_URL`         | public API              | Price API base URL for fiat pricing.          |
+| `VEXPAY_WEBHOOK_URL`           | —                       | Endpoint that receives signed invoice events. |
+| `VEXPAY_WEBHOOK_SECRET`        | —                       | HMAC secret used to sign webhook payloads.    |
+| `VEXPAY_API_KEY`               | —                       | Seed a live API key (else set at runtime).    |
+| `VEXPAY_SANDBOX_API_KEY`       | auto (dev)              | Seed a sandbox key; auto-generated in dev.    |
 
 In `production`, `VEXPAY_PUBLIC_URL` must be HTTPS and `VEXPAY_ADMIN_SESSION_SECRET` is
 required.
+
+## API
+
+Authenticate with `Authorization: Bearer <api-key>`.
+
+| Method & path                     | Description                                             |
+| --------------------------------- | ------------------------------------------------------- |
+| `POST /v1/invoices`               | Create an invoice (crypto-priced or fiat-priced).       |
+| `GET  /v1/invoices/{id}`          | Fetch an invoice and its live payment status.           |
+| `GET  /v1/invoices/{id}/qr`       | PNG QR code of the invoice's payment URI (`?size`).     |
+| `GET  /v1/invoices`               | List your invoices (`?limit`, `?offset`).               |
+| `POST /v1/sandbox/pay/{id}`       | Simulate a payment (sandbox keys only).                 |
+
+Create a Bitcoin invoice priced in crypto:
+
+```sh
+curl -X POST http://localhost:8080/v1/invoices \
+  -H "Authorization: Bearer $VEXPAY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"chain":"bitcoin","asset":"BTC","amount":"0.005","wallet":{"xpub":"zpub..."}}'
+```
+
+Or price it in fiat and let VexPay lock the rate:
+
+```sh
+curl -X POST http://localhost:8080/v1/invoices \
+  -H "Authorization: Bearer $VEXPAY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"chain":"bitcoin","fiat_currency":"EUR","fiat_amount":"25","wallet":{"xpub":"zpub..."}}'
+```
+
+Verify webhook authenticity from the `VexPay-Signature: t=<unix>,v1=<hmac>` header by computing
+`HMAC-SHA256(secret, "<t>." + rawBody)` and comparing in constant time.
 
 ## Architecture
 
