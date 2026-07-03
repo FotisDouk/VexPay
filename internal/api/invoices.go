@@ -10,6 +10,7 @@ import (
 	"github.com/vexarnetwork/vexpay/internal/chain"
 	"github.com/vexarnetwork/vexpay/internal/invoice"
 	"github.com/vexarnetwork/vexpay/internal/money"
+	"github.com/vexarnetwork/vexpay/internal/qr"
 )
 
 // createInvoiceRequest is the POST /v1/invoices body.
@@ -125,8 +126,11 @@ func (s *Server) handleInvoiceItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	principal, _ := principalFrom(r.Context())
-	id := strings.TrimPrefix(r.URL.Path, "/v1/invoices/")
-	if id == "" || strings.Contains(id, "/") {
+
+	rest := strings.TrimPrefix(r.URL.Path, "/v1/invoices/")
+	parts := strings.Split(rest, "/")
+	id := parts[0]
+	if id == "" {
 		writeError(w, http.StatusNotFound, "not found")
 		return
 	}
@@ -145,7 +149,28 @@ func (s *Server) handleInvoiceItem(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "invoice not found")
 		return
 	}
-	writeJSON(w, http.StatusOK, invoice.NewView(inv))
+
+	switch {
+	case len(parts) == 1:
+		writeJSON(w, http.StatusOK, invoice.NewView(inv))
+	case len(parts) == 2 && parts[1] == "qr":
+		s.writeInvoiceQR(w, r, inv)
+	default:
+		writeError(w, http.StatusNotFound, "not found")
+	}
+}
+
+// writeInvoiceQR renders the invoice's payment URI as a PNG QR code.
+func (s *Server) writeInvoiceQR(w http.ResponseWriter, r *http.Request, inv *invoice.Invoice) {
+	png, err := qr.PNG(inv.PaymentURI, queryInt(r, "size", 256))
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to render QR code")
+		return
+	}
+	w.Header().Set("Content-Type", "image/png")
+	w.Header().Set("Cache-Control", "no-store")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(png)
 }
 
 // decodeJSON strictly decodes a JSON request body, writing a 400 on failure.

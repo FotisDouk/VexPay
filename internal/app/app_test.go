@@ -113,6 +113,42 @@ func TestSandboxEndToEnd(t *testing.T) {
 	}
 }
 
+func TestInvoiceQRReturnsPNG(t *testing.T) {
+	const sandboxKey = "vpk_test_qr"
+	cfg := config.Default()
+	cfg.DatabaseURL = "memory:"
+	cfg.SandboxAPIKey = sandboxKey
+
+	application, err := Build(cfg)
+	if err != nil {
+		t.Fatalf("build: %v", err)
+	}
+	defer application.Close()
+
+	srv := httptest.NewServer(application.Handler)
+	defer srv.Close()
+	client := srv.Client()
+
+	resp := doJSON(t, client, http.MethodPost, srv.URL+"/v1/invoices", sandboxKey,
+		`{"chain":"mock","asset":"tBTC","amount":"0.001"}`)
+	var created invoiceView
+	decode(t, resp, &created)
+
+	qrResp := doJSON(t, client, http.MethodGet, srv.URL+"/v1/invoices/"+created.ID+"/qr?size=128", sandboxKey, "")
+	defer qrResp.Body.Close()
+	if qrResp.StatusCode != http.StatusOK {
+		t.Fatalf("qr status = %d, want 200", qrResp.StatusCode)
+	}
+	if ct := qrResp.Header.Get("Content-Type"); ct != "image/png" {
+		t.Fatalf("qr content-type = %q, want image/png", ct)
+	}
+	png, _ := io.ReadAll(qrResp.Body)
+	// PNG magic number.
+	if len(png) < 8 || string(png[1:4]) != "PNG" {
+		t.Fatalf("response is not a PNG (len=%d)", len(png))
+	}
+}
+
 type invoiceView struct {
 	ID             string `json:"id"`
 	Status         string `json:"status"`
