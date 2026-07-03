@@ -16,12 +16,19 @@ type Emitter interface {
 	Emit(ctx context.Context, change StatusChange)
 }
 
+// Pricer converts a fiat price into a crypto amount and returns the locked rate
+// (implemented by the rates oracle). A nil Pricer disables fiat-priced invoices.
+type Pricer interface {
+	CryptoAmount(ctx context.Context, asset money.Asset, fiatCurrency, fiatAmount string) (money.Amount, string, error)
+}
+
 // Service creates invoices and advances their lifecycle from chain
 // observations.
 type Service struct {
 	repo     Repository
 	registry *chain.Registry
 	emitter  Emitter
+	pricer   Pricer
 
 	now    func() time.Time
 	newID  func() string
@@ -33,6 +40,7 @@ type Options struct {
 	Repo     Repository
 	Registry *chain.Registry
 	Emitter  Emitter
+	Pricer   Pricer
 	Expiry   time.Duration
 	// Now and NewID are injectable for tests; sensible defaults are used if nil.
 	Now   func() time.Time
@@ -57,6 +65,7 @@ func NewService(opts Options) *Service {
 		repo:     opts.Repo,
 		registry: opts.Registry,
 		emitter:  opts.Emitter,
+		pricer:   opts.Pricer,
 		now:      now,
 		newID:    newID,
 		expiry:   expiry,
@@ -87,11 +96,15 @@ func (s *Service) Create(ctx context.Context, p CreateParams) (*Invoice, error) 
 	if err != nil {
 		return nil, err
 	}
-	if p.Amount.Asset() != adapter.Asset() {
-		return nil, fmt.Errorf("amount asset %s does not match chain asset %s", p.Amount.Asset().Symbol, adapter.Asset().Symbol)
+	asset := adapter.Asset()
+
+	amount, rate, err := s.resolveAmount(ctx, asset, p)
+	if err != nil {
+		return nil, err
 	}
-	if p.Amount.IsZero() || p.Amount.Cmp(money.Zero(p.Amount.Asset())) < 0 {
-		return nil, fmt.Errorf("amount must be positive")
+	p.Amount = amount
+	if rate != "" {
+		p.Rate = rate
 	}
 
 	idx, err := s.repo.NextDerivationIndex(ctx, p.MerchantID)
@@ -129,6 +142,34 @@ func (s *Service) Create(ctx context.Context, p CreateParams) (*Invoice, error) 
 		return nil, err
 	}
 	return inv, nil
+}
+
+// resolveAmount determines the crypto amount for an invoice, either directly
+// (crypto-priced) or by converting a fiat price through the pricer. It returns
+// the amount and any locked rate.
+func (s *Service) resolveAmount(ctx context.Context, asset money.Asset, p CreateParams) (money.Amount, string, error) {
+	if !p.Amount.IsZero() {
+		if p.Amount.Asset() != asset {
+			return money.Amount{}, "", fmt.Errorf("amount asset %s does not match chain asset %s", p.Amount.Asset().Symbol, asset.Symbol)
+		}
+		if p.Amount.Cmp(money.Zero(asset)) <= 0 {
+			return money.Amount{}, "", fmt.Errorf("amount must be positive")
+		}
+		return p.Amount, "", nil
+	}
+
+	if p.FiatCurrency != "" && p.FiatAmount != "" {
+		if s.pricer == nil {
+			return money.Amount{}, "", fmt.Errorf("fiat-priced invoices are not enabled")
+		}
+		amount, rate, err := s.pricer.CryptoAmount(ctx, asset, p.FiatCurrency, p.FiatAmount)
+		if err != nil {
+			return money.Amount{}, "", err
+		}
+		return amount, rate, nil
+	}
+
+	return money.Amount{}, "", fmt.Errorf("an amount or a fiat price (fiat_currency + fiat_amount) is required")
 }
 
 // Get returns an invoice by ID.

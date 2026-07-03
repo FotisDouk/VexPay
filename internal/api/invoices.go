@@ -54,22 +54,8 @@ func (s *Server) createInvoice(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "chain is required")
 		return
 	}
-	if req.Asset == "" {
-		writeError(w, http.StatusBadRequest, "asset is required")
-		return
-	}
-	asset, err := money.Lookup(req.Asset)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	amount, err := money.ParseDecimal(asset, req.Amount)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid amount: "+err.Error())
-		return
-	}
 
-	inv, err := s.deps.Invoices.Create(r.Context(), invoice.CreateParams{
+	params := invoice.CreateParams{
 		MerchantID: principal.MerchantID,
 		Chain:      chain.ID(req.Chain),
 		Wallet: chain.WalletConfig{
@@ -78,12 +64,33 @@ func (s *Server) createInvoice(w http.ResponseWriter, r *http.Request) {
 			ViewKey:        req.Wallet.ViewKey,
 			PrimaryAddress: req.Wallet.PrimaryAddress,
 		},
-		Amount:       amount,
 		FiatCurrency: req.FiatCurrency,
 		FiatAmount:   req.FiatAmount,
 		Rate:         req.Rate,
 		Metadata:     req.Metadata,
-	})
+	}
+
+	// Crypto-priced: an explicit amount (with its asset). Otherwise the service
+	// falls back to fiat pricing from fiat_currency + fiat_amount.
+	if req.Amount != "" {
+		if req.Asset == "" {
+			writeError(w, http.StatusBadRequest, "asset is required when amount is set")
+			return
+		}
+		asset, err := money.Lookup(req.Asset)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		amount, err := money.ParseDecimal(asset, req.Amount)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid amount: "+err.Error())
+			return
+		}
+		params.Amount = amount
+	}
+
+	inv, err := s.deps.Invoices.Create(r.Context(), params)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return

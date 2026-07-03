@@ -13,6 +13,7 @@ import (
 	"github.com/vexarnetwork/vexpay/internal/chain/mock"
 	"github.com/vexarnetwork/vexpay/internal/config"
 	"github.com/vexarnetwork/vexpay/internal/invoice"
+	"github.com/vexarnetwork/vexpay/internal/rates"
 	"github.com/vexarnetwork/vexpay/internal/store"
 	"github.com/vexarnetwork/vexpay/internal/watcher"
 	"github.com/vexarnetwork/vexpay/internal/webhook"
@@ -73,10 +74,13 @@ func Build(cfg config.Config) (*App, error) {
 	})
 	dispatcher := webhook.NewDispatcher(webhook.Options{Resolver: resolver})
 
+	oracle := rates.NewOracle(cfg.RateCacheTTL, rates.NewCoinGecko(cfg.CoinGeckoURL))
+
 	invoices := invoice.NewService(invoice.Options{
 		Repo:     st.Invoices(),
 		Registry: registry,
 		Emitter:  dispatcher,
+		Pricer:   oracle,
 		Expiry:   cfg.InvoiceExpiry,
 	})
 

@@ -44,6 +44,11 @@ type Config struct {
 	BTCExplorerURL        string
 	BTCTestnetExplorerURL string
 
+	// CoinGeckoURL overrides the price API base URL (empty = public endpoint).
+	CoinGeckoURL string
+	// RateCacheTTL is how long a fetched exchange rate is cached/reused.
+	RateCacheTTL time.Duration
+
 	// WebhookURL/WebhookSecret configure a single default webhook endpoint used
 	// for every merchant until per-merchant webhook config lands.
 	WebhookURL    string
@@ -70,6 +75,7 @@ func Default() Config {
 		EnableBitcoin:         true,
 		BTCExplorerURL:        "https://mempool.space",
 		BTCTestnetExplorerURL: "https://mempool.space/testnet",
+		RateCacheTTL:          60 * time.Second,
 	}
 }
 
@@ -128,6 +134,14 @@ func Load() (Config, error) {
 	}
 	if v := env("BTC_TESTNET_EXPLORER_URL"); v != "" {
 		c.BTCTestnetExplorerURL = strings.TrimRight(v, "/")
+	}
+	c.CoinGeckoURL = strings.TrimRight(env("COINGECKO_URL"), "/")
+	if v := env("RATE_CACHE_TTL"); v != "" {
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			return c, fmt.Errorf("invalid VEXPAY_RATE_CACHE_TTL: %w", err)
+		}
+		c.RateCacheTTL = d
 	}
 	c.WebhookURL = env("WEBHOOK_URL")
 	c.WebhookSecret = env("WEBHOOK_SECRET")

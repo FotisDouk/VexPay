@@ -101,6 +101,57 @@ func TestLifecycleUnderpaidToConfirmingToPaid(t *testing.T) {
 	}
 }
 
+type stubPricer struct {
+	amount money.Amount
+	rate   string
+}
+
+func (s stubPricer) CryptoAmount(_ context.Context, _ money.Asset, _, _ string) (money.Amount, string, error) {
+	return s.amount, s.rate, nil
+}
+
+func TestFiatPricedInvoice(t *testing.T) {
+	ctx := context.Background()
+	clock := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	reg := chain.NewRegistry()
+	if err := reg.Register(mock.New(1)); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+	svc := NewService(Options{
+		Repo:     NewMemRepository(),
+		Registry: reg,
+		Pricer:   stubPricer{amount: mustAmount(t, "0.0005"), rate: "60000.00"},
+		Now:      func() time.Time { return clock },
+	})
+
+	inv, err := svc.Create(ctx, CreateParams{
+		MerchantID:   "m1",
+		Chain:        mock.ChainID,
+		FiatCurrency: "EUR",
+		FiatAmount:   "30",
+	})
+	if err != nil {
+		t.Fatalf("create fiat invoice: %v", err)
+	}
+	if inv.Amount.String() != "0.00050000" {
+		t.Errorf("amount = %s, want 0.00050000", inv.Amount)
+	}
+	if inv.Rate != "60000.00" {
+		t.Errorf("rate = %s, want 60000.00", inv.Rate)
+	}
+	if inv.FiatCurrency != "EUR" || inv.FiatAmount != "30" {
+		t.Errorf("fiat fields not preserved: %+v", inv)
+	}
+}
+
+func TestCreateRequiresAmountOrFiat(t *testing.T) {
+	ctx := context.Background()
+	svc, _, _ := newTestService(t, 1, func() time.Time { return time.Now() })
+	if _, err := svc.Create(ctx, CreateParams{MerchantID: "m1", Chain: mock.ChainID}); err == nil {
+		t.Fatal("expected error when neither amount nor fiat price is given")
+	}
+}
+
 func TestOverpaidSettles(t *testing.T) {
 	ctx := context.Background()
 	clock := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
