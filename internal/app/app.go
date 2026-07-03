@@ -9,6 +9,7 @@ import (
 	"github.com/vexarnetwork/vexpay/internal/api"
 	"github.com/vexarnetwork/vexpay/internal/auth"
 	"github.com/vexarnetwork/vexpay/internal/chain"
+	"github.com/vexarnetwork/vexpay/internal/chain/btc"
 	"github.com/vexarnetwork/vexpay/internal/chain/mock"
 	"github.com/vexarnetwork/vexpay/internal/config"
 	"github.com/vexarnetwork/vexpay/internal/invoice"
@@ -50,6 +51,16 @@ func Build(cfg config.Config) (*App, error) {
 	if cfg.EnableSandbox {
 		sandbox = mock.New(cfg.SandboxConfirmations)
 		if err := registry.Register(sandbox); err != nil {
+			return nil, err
+		}
+	}
+	if cfg.EnableBitcoin {
+		mainnet := btc.New(btc.Mainnet, btc.NewMempoolBackend(cfg.BTCExplorerURL), 0)
+		testnet := btc.New(btc.Testnet, btc.NewMempoolBackend(cfg.BTCTestnetExplorerURL), 0)
+		if err := registry.Register(mainnet); err != nil {
+			return nil, err
+		}
+		if err := registry.Register(testnet); err != nil {
 			return nil, err
 		}
 	}

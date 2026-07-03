@@ -37,6 +37,13 @@ type Config struct {
 	// SandboxConfirmations is how many confirmations a sandbox invoice needs.
 	SandboxConfirmations int
 
+	// EnableBitcoin registers the Bitcoin mainnet and testnet adapters.
+	EnableBitcoin bool
+	// BTCExplorerURL / BTCTestnetExplorerURL point at a mempool.space/Esplora
+	// API. Swap for a self-hosted instance to remove third-party trust.
+	BTCExplorerURL        string
+	BTCTestnetExplorerURL string
+
 	// WebhookURL/WebhookSecret configure a single default webhook endpoint used
 	// for every merchant until per-merchant webhook config lands.
 	WebhookURL    string
@@ -51,15 +58,18 @@ type Config struct {
 // Default returns a Config populated with development-friendly defaults.
 func Default() Config {
 	return Config{
-		Env:                  "development",
-		Addr:                 ":8080",
-		PublicURL:            "http://localhost:8080",
-		DatabaseURL:          "sqlite:vexpay.db",
-		InvoiceExpiry:        15 * time.Minute,
-		RequestTimeout:       30 * time.Second,
-		WatchInterval:        15 * time.Second,
-		EnableSandbox:        true,
-		SandboxConfirmations: 1,
+		Env:                   "development",
+		Addr:                  ":8080",
+		PublicURL:             "http://localhost:8080",
+		DatabaseURL:           "sqlite:vexpay.db",
+		InvoiceExpiry:         15 * time.Minute,
+		RequestTimeout:        30 * time.Second,
+		WatchInterval:         15 * time.Second,
+		EnableSandbox:         true,
+		SandboxConfirmations:  1,
+		EnableBitcoin:         true,
+		BTCExplorerURL:        "https://mempool.space",
+		BTCTestnetExplorerURL: "https://mempool.space/testnet",
 	}
 }
 
@@ -111,6 +121,13 @@ func Load() (Config, error) {
 			return c, fmt.Errorf("invalid VEXPAY_SANDBOX_CONFIRMATIONS: %q", v)
 		}
 		c.SandboxConfirmations = n
+	}
+	c.EnableBitcoin = boolEnv("ENABLE_BITCOIN", c.EnableBitcoin)
+	if v := env("BTC_EXPLORER_URL"); v != "" {
+		c.BTCExplorerURL = strings.TrimRight(v, "/")
+	}
+	if v := env("BTC_TESTNET_EXPLORER_URL"); v != "" {
+		c.BTCTestnetExplorerURL = strings.TrimRight(v, "/")
 	}
 	c.WebhookURL = env("WEBHOOK_URL")
 	c.WebhookSecret = env("WEBHOOK_SECRET")
