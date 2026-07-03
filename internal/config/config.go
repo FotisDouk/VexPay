@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -28,17 +29,37 @@ type Config struct {
 	RequestTimeout time.Duration
 	// AdminSessionSecret signs admin dashboard sessions. Required in production.
 	AdminSessionSecret string
+	// WatchInterval is how often the watcher polls open invoices.
+	WatchInterval time.Duration
+
+	// EnableSandbox registers the mock chain and payment simulator.
+	EnableSandbox bool
+	// SandboxConfirmations is how many confirmations a sandbox invoice needs.
+	SandboxConfirmations int
+
+	// WebhookURL/WebhookSecret configure a single default webhook endpoint used
+	// for every merchant until per-merchant webhook config lands.
+	WebhookURL    string
+	WebhookSecret string
+
+	// APIKey / SandboxAPIKey seed initial keys. If SandboxAPIKey is empty and
+	// the sandbox is enabled outside production, one is generated and logged.
+	APIKey        string
+	SandboxAPIKey string
 }
 
 // Default returns a Config populated with development-friendly defaults.
 func Default() Config {
 	return Config{
-		Env:            "development",
-		Addr:           ":8080",
-		PublicURL:      "http://localhost:8080",
-		DatabaseURL:    "sqlite:vexpay.db",
-		InvoiceExpiry:  15 * time.Minute,
-		RequestTimeout: 30 * time.Second,
+		Env:                  "development",
+		Addr:                 ":8080",
+		PublicURL:            "http://localhost:8080",
+		DatabaseURL:          "sqlite:vexpay.db",
+		InvoiceExpiry:        15 * time.Minute,
+		RequestTimeout:       30 * time.Second,
+		WatchInterval:        15 * time.Second,
+		EnableSandbox:        true,
+		SandboxConfirmations: 1,
 	}
 }
 
@@ -76,6 +97,25 @@ func Load() (Config, error) {
 		}
 		c.RequestTimeout = d
 	}
+	if v := env("WATCH_INTERVAL"); v != "" {
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			return c, fmt.Errorf("invalid VEXPAY_WATCH_INTERVAL: %w", err)
+		}
+		c.WatchInterval = d
+	}
+	c.EnableSandbox = boolEnv("ENABLE_SANDBOX", c.EnableSandbox)
+	if v := env("SANDBOX_CONFIRMATIONS"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 {
+			return c, fmt.Errorf("invalid VEXPAY_SANDBOX_CONFIRMATIONS: %q", v)
+		}
+		c.SandboxConfirmations = n
+	}
+	c.WebhookURL = env("WEBHOOK_URL")
+	c.WebhookSecret = env("WEBHOOK_SECRET")
+	c.APIKey = env("API_KEY")
+	c.SandboxAPIKey = env("SANDBOX_API_KEY")
 
 	if err := c.Validate(); err != nil {
 		return c, err
@@ -111,3 +151,16 @@ func (c Config) IsProduction() bool { return c.Env == "production" }
 
 // env reads a VEXPAY_-prefixed environment variable.
 func env(key string) string { return os.Getenv("VEXPAY_" + key) }
+
+// boolEnv reads an optional boolean VEXPAY_ variable, falling back to def.
+func boolEnv(key string, def bool) bool {
+	v := env(key)
+	if v == "" {
+		return def
+	}
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		return def
+	}
+	return b
+}

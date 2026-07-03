@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/vexarnetwork/vexpay/internal/auth"
+	"github.com/vexarnetwork/vexpay/internal/chain"
 	"github.com/vexarnetwork/vexpay/internal/config"
 	"github.com/vexarnetwork/vexpay/internal/store"
 )
@@ -17,7 +19,12 @@ func newTestServer(t *testing.T) http.Handler {
 		t.Fatalf("open store: %v", err)
 	}
 	t.Cleanup(func() { _ = st.Close() })
-	return New(config.Default(), st).Handler()
+	return New(Deps{
+		Config: config.Default(),
+		Store:  st,
+		Chains: chain.NewRegistry(),
+		Auth:   auth.NewStore(),
+	}).Handler()
 }
 
 func TestHealthz(t *testing.T) {

@@ -8,21 +8,36 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/vexarnetwork/vexpay/internal/auth"
+	"github.com/vexarnetwork/vexpay/internal/chain"
+	"github.com/vexarnetwork/vexpay/internal/chain/mock"
 	"github.com/vexarnetwork/vexpay/internal/config"
+	"github.com/vexarnetwork/vexpay/internal/invoice"
 	"github.com/vexarnetwork/vexpay/internal/store"
 	"github.com/vexarnetwork/vexpay/internal/version"
 )
 
-// Server wires configuration and dependencies into an http.Handler.
+// Deps are the dependencies the HTTP layer needs.
+type Deps struct {
+	Config   config.Config
+	Store    store.Store
+	Invoices *invoice.Service
+	Chains   *chain.Registry
+	Auth     *auth.Store
+	// Sandbox is the mock adapter used by the payment simulator. Nil disables
+	// the sandbox endpoints.
+	Sandbox *mock.Adapter
+}
+
+// Server wires dependencies into an http.Handler.
 type Server struct {
-	cfg   config.Config
-	store store.Store
-	mux   *http.ServeMux
+	deps Deps
+	mux  *http.ServeMux
 }
 
 // New constructs a Server and registers routes.
-func New(cfg config.Config, st store.Store) *Server {
-	s := &Server{cfg: cfg, store: st, mux: http.NewServeMux()}
+func New(deps Deps) *Server {
+	s := &Server{deps: deps, mux: http.NewServeMux()}
 	s.routes()
 	return s
 }
@@ -33,13 +48,20 @@ func New(cfg config.Config, st store.Store) *Server {
 // handler in its own goroutine; a panic must be recovered in that same
 // goroutine.
 func (s *Server) Handler() http.Handler {
-	return withRequestTimeout(s.cfg.RequestTimeout, withRecover(s.mux))
+	return withRequestTimeout(s.deps.Config.RequestTimeout, withRecover(s.mux))
 }
 
 func (s *Server) routes() {
 	s.mux.HandleFunc("/healthz", s.handleHealth)
 	s.mux.HandleFunc("/readyz", s.handleReady)
 	s.mux.HandleFunc("/version", s.handleVersion)
+
+	s.mux.Handle("/v1/invoices", s.authed(s.handleInvoicesCollection))
+	s.mux.Handle("/v1/invoices/", s.authed(s.handleInvoiceItem))
+
+	if s.deps.Sandbox != nil {
+		s.mux.Handle("/v1/sandbox/pay/", s.authed(s.handleSandboxPay))
+	}
 }
 
 // handleHealth is a liveness probe: the process is up and serving.
@@ -50,7 +72,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"status": "ok",
-		"env":    s.cfg.Env,
+		"env":    s.deps.Config.Env,
 	})
 }
 
@@ -62,7 +84,7 @@ func (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
-	if err := s.store.Ping(ctx); err != nil {
+	if err := s.deps.Store.Ping(ctx); err != nil {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]any{
 			"status": "unavailable",
 			"store":  "unreachable",
@@ -91,9 +113,11 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
+func writeError(w http.ResponseWriter, status int, msg string) {
+	writeJSON(w, status, map[string]any{"error": msg})
+}
+
 func methodNotAllowed(w http.ResponseWriter, allow string) {
 	w.Header().Set("Allow", allow)
-	writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
-		"error": "method not allowed",
-	})
+	writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 }

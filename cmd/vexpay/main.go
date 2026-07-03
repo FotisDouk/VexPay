@@ -11,9 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/vexarnetwork/vexpay/internal/api"
+	"github.com/vexarnetwork/vexpay/internal/app"
 	"github.com/vexarnetwork/vexpay/internal/config"
-	"github.com/vexarnetwork/vexpay/internal/store"
 	"github.com/vexarnetwork/vexpay/internal/version"
 )
 
@@ -37,20 +36,28 @@ func run() error {
 		return err
 	}
 
-	st, err := store.Open(cfg.DatabaseURL)
+	application, err := app.Build(cfg)
 	if err != nil {
 		return err
 	}
-	defer st.Close()
+	defer application.Close()
+
+	if application.SeededSandboxKey != "" {
+		log.Printf("generated sandbox API key (test only): %s", application.SeededSandboxKey)
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	// Background watcher: confirms payments automatically.
+	go application.Watcher.Run(ctx)
 
 	srv := &http.Server{
 		Addr:              cfg.Addr,
-		Handler:           api.New(cfg, st).Handler(),
+		Handler:           application.Handler,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
-	// Run the server until we receive an interrupt/terminate signal, then shut
-	// down gracefully so in-flight requests complete.
 	errCh := make(chan error, 1)
 	go func() {
 		log.Printf("vexpay %s listening on %s (env=%s)", version.Version, cfg.Addr, cfg.Env)
@@ -58,9 +65,6 @@ func run() error {
 			errCh <- err
 		}
 	}()
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 
 	select {
 	case err := <-errCh:
