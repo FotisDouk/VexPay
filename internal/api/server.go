@@ -12,6 +12,7 @@ import (
 	"github.com/vexarnetwork/vexpay/internal/chain"
 	"github.com/vexarnetwork/vexpay/internal/chain/mock"
 	"github.com/vexarnetwork/vexpay/internal/config"
+	"github.com/vexarnetwork/vexpay/internal/dashboard"
 	"github.com/vexarnetwork/vexpay/internal/invoice"
 	"github.com/vexarnetwork/vexpay/internal/store"
 	"github.com/vexarnetwork/vexpay/internal/version"
@@ -61,6 +62,13 @@ func (s *Server) routes() {
 
 	if s.deps.Sandbox != nil {
 		s.mux.Handle("/v1/sandbox/pay/", s.authed(s.handleSandboxPay))
+	}
+
+	if s.deps.Config.EnableDashboard {
+		s.mux.Handle("/dashboard/", http.StripPrefix("/dashboard/", dashboard.Handler()))
+		s.mux.HandleFunc("/dashboard", func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, "/dashboard/", http.StatusMovedPermanently)
+		})
 	}
 }
 

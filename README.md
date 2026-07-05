@@ -97,6 +97,12 @@ curl -X POST http://localhost:8080/v1/invoices \
 Verify webhook authenticity from the `VexPay-Signature: t=<unix>,v1=<hmac>` header by computing
 `HMAC-SHA256(secret, "<t>." + rawBody)` and comparing in constant time.
 
+## Dashboard
+
+An admin UI is embedded in the binary and served at `/dashboard/`. It shows invoice status at a
+glance, lets you create invoices, view payment QR codes, and (in the sandbox) simulate payments.
+Paste an API key to connect. Disable it with `VEXPAY_ENABLE_DASHBOARD=false`.
+
 ## Architecture
 
 VexPay is a single Go binary. Coins are added through a small **chain-adapter** interface, so

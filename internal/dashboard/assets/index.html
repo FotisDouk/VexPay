@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VexPay Dashboard</title>
+  <style>
+    :root {
+      --bg:#ffffff; --fg:#14171f; --muted:#5b6472; --accent:#4f46e5; --card:#f6f7f9;
+      --border:#e4e7ec; --code-bg:#f4f5f7; --pill:#eef0ff;
+      --green:#2e9c54; --greenbg:#1f7a3d1f; --amber:#b7791f; --amberbg:#b7791f22;
+      --red:#d64545; --redbg:#d6454522; --blue:#3b7ddd; --bluebg:#3b7ddd22;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:#0e1116; --fg:#e7eaf0; --muted:#9aa4b2; --accent:#8b85f7; --card:#161a21;
+        --border:#262c36; --code-bg:#12161c; --pill:#1c2030;
+        --green:#4ccb78; --amber:#e0b155; --red:#f07575; --blue:#6ea8ff;
+      }
+    }
+    :root[data-theme="light"]{--bg:#fff;--fg:#14171f;--muted:#5b6472;--accent:#4f46e5;--card:#f6f7f9;--border:#e4e7ec;--code-bg:#f4f5f7;--pill:#eef0ff;--green:#2e9c54;--amber:#b7791f;--red:#d64545;--blue:#3b7ddd;}
+    :root[data-theme="dark"]{--bg:#0e1116;--fg:#e7eaf0;--muted:#9aa4b2;--accent:#8b85f7;--card:#161a21;--border:#262c36;--code-bg:#12161c;--pill:#1c2030;--green:#4ccb78;--amber:#e0b155;--red:#f07575;--blue:#6ea8ff;}
+    *{box-sizing:border-box;}
+    body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+    code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+    a{color:var(--accent);}
+    header{display:flex;align-items:center;gap:1rem;padding:.9rem 1.4rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:10;flex-wrap:wrap;}
+    .brand{font-weight:800;font-size:1.25rem;letter-spacing:-.02em;}
+    .brand span{color:var(--accent);}
+    .brand small{font-weight:500;font-size:.7rem;color:var(--muted);display:block;letter-spacing:0;}
+    header .spacer{flex:1;}
+    input,select,button{font:inherit;color:var(--fg);}
+    input,select{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:.45rem .6rem;}
+    button{cursor:pointer;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.45rem .8rem;}
+    button.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+    button:hover{filter:brightness(1.05);}
+    .wrap{max-width:1080px;margin:0 auto;padding:1.4rem;}
+    .status-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--red);margin-right:.4rem;vertical-align:middle;}
+    .status-dot.ok{background:var(--green);}
+
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.8rem;margin-bottom:1.2rem;}
+    .stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:.9rem 1rem;}
+    .stat .n{font-size:1.7rem;font-weight:700;letter-spacing:-.02em;}
+    .stat .l{color:var(--muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;}
+
+    .toolbar{display:flex;gap:.6rem;align-items:center;margin-bottom:.9rem;flex-wrap:wrap;}
+    .toolbar .spacer{flex:1;}
+    label.chk{display:inline-flex;align-items:center;gap:.35rem;color:var(--muted);font-size:.85rem;}
+
+    table{width:100%;border-collapse:collapse;font-size:.9rem;}
+    th,td{text-align:left;padding:.55rem .6rem;border-bottom:1px solid var(--border);}
+    th{color:var(--muted);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;}
+    tbody tr{cursor:pointer;}
+    tbody tr:hover{background:var(--card);}
+    .empty{color:var(--muted);text-align:center;padding:2.5rem;}
+
+    .badge{display:inline-block;padding:.12rem .55rem;border-radius:999px;font-size:.76rem;font-weight:600;}
+    .b-pending{background:var(--bluebg);color:var(--blue);}
+    .b-confirming{background:var(--amberbg);color:var(--amber);}
+    .b-underpaid{background:var(--amberbg);color:var(--amber);}
+    .b-paid,.b-overpaid{background:var(--greenbg);color:var(--green);}
+    .b-expired{background:var(--redbg);color:var(--red);}
+
+    /* Modal */
+    .overlay{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:1rem;z-index:50;}
+    .overlay.show{display:flex;}
+    .modal{background:var(--bg);border:1px solid var(--border);border-radius:14px;max-width:560px;width:100%;max-height:90vh;overflow:auto;padding:1.3rem;}
+    .modal h2{margin:.1rem 0 1rem;font-size:1.15rem;}
+    .kv{display:grid;grid-template-columns:130px 1fr;gap:.4rem .8rem;font-size:.88rem;margin-bottom:1rem;}
+    .kv div:nth-child(odd){color:var(--muted);}
+    .kv .mono{word-break:break-all;}
+    .qr{display:block;margin:.5rem auto;background:#fff;padding:8px;border-radius:8px;width:200px;height:200px;}
+    .row-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem;}
+    .field{margin-bottom:.7rem;}
+    .field label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:.2rem;}
+    .field input,.field select{width:100%;}
+    .muted{color:var(--muted);font-size:.85rem;}
+    .hide{display:none!important;}
+    .err{color:var(--red);font-size:.85rem;margin-top:.5rem;}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">Vex<span>Pay</span><small>Dashboard</small></div>
+    <div class="spacer"></div>
+    <span id="conn"><span class="status-dot" id="dot"></span><span id="connText" class="muted">not connected</span></span>
+    <input id="apiKey" type="password" placeholder="API key (vpk_…)" style="width:220px" autocomplete="off" />
+    <button id="saveKey" class="primary">Connect</button>
+    <button id="theme" title="Toggle theme">◐</button>
+  </header>
+
+  <div class="wrap">
+    <div class="stats" id="stats">
+      <div class="stat"><div class="n" id="s-total">–</div><div class="l">Invoices</div></div>
+      <div class="stat"><div class="n" id="s-paid">–</div><div class="l">Paid</div></div>
+      <div class="stat"><div class="n" id="s-open">–</div><div class="l">Open</div></div>
+      <div class="stat"><div class="n" id="s-expired">–</div><div class="l">Expired</div></div>
+    </div>
+
+    <div class="toolbar">
+      <button id="newBtn" class="primary">+ New invoice</button>
+      <button id="refresh">↻ Refresh</button>
+      <label class="chk"><input type="checkbox" id="auto" checked /> Auto-refresh</label>
+      <div class="spacer"></div>
+      <span class="muted" id="updated"></span>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Invoice</th><th>Chain</th><th>Amount</th><th>Status</th><th>Confs</th><th>Created</th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="empty hide" id="empty">No invoices yet. Create one to get started.</div>
+    <div class="err" id="listErr"></div>
+  </div>
+
+  <!-- Detail modal -->
+  <div class="overlay" id="detailOverlay">
+    <div class="modal">
+      <h2>Invoice <span class="mono" id="d-id"></span></h2>
+      <img class="qr" id="d-qr" alt="payment QR" />
+      <div class="kv" id="d-kv"></div>
+      <div class="row-actions">
+        <button id="d-copy">Copy address</button>
+        <button id="d-pay" class="primary hide">Simulate payment (sandbox)</button>
+        <button id="d-close">Close</button>
+      </div>
+      <div class="err" id="d-err"></div>
+    </div>
+  </div>
+
+  <!-- Create modal -->
+  <div class="overlay" id="createOverlay">
+    <div class="modal">
+      <h2>New invoice</h2>
+      <div class="field"><label>Chain</label>
+        <select id="c-chain">
+          <option value="mock">mock (sandbox)</option>
+          <option value="bitcoin">bitcoin</option>
+          <option value="bitcoin-testnet">bitcoin-testnet</option>
+        </select>
+      </div>
+      <div class="field"><label>Pricing</label>
+        <select id="c-mode">
+          <option value="crypto">Crypto amount</option>
+          <option value="fiat">Fiat amount</option>
+        </select>
+      </div>
+      <div id="c-crypto">
+        <div class="field"><label>Asset</label><input id="c-asset" value="tBTC" /></div>
+        <div class="field"><label>Amount</label><input id="c-amount" value="0.0025" /></div>
+      </div>
+      <div id="c-fiat" class="hide">
+        <div class="field"><label>Fiat currency</label><input id="c-fiatcur" value="EUR" /></div>
+        <div class="field"><label>Fiat amount</label><input id="c-fiatamt" value="25" /></div>
+      </div>
+      <div class="field" id="c-walletField"><label>Wallet xpub (Bitcoin)</label><input id="c-xpub" placeholder="zpub… / xpub…" /></div>
+      <div class="row-actions">
+        <button id="c-submit" class="primary">Create</button>
+        <button id="c-cancel">Cancel</button>
+      </div>
+      <div class="err" id="c-err"></div>
+    </div>
+  </div>
+
+  <script>
+    var KEY_STORE = "vexpay-dashboard-key";
+    var apiKey = "";
+    var timer = null;
+
+    function $(id){ return document.getElementById(id); }
+    function shorten(s){ return s && s.length > 16 ? s.slice(0,10)+"…"+s.slice(-4) : s; }
+    function fmtTime(s){ if(!s) return "–"; try { return new Date(s).toLocaleString(); } catch(e){ return s; } }
+
+    // Theme
+    (function(){
+      var saved=null; try{saved=localStorage.getItem("vexpay-theme");}catch(e){}
+      if(saved) document.documentElement.setAttribute("data-theme",saved);
+      $("theme").addEventListener("click",function(){
+        var cur=document.documentElement.getAttribute("data-theme");
+        if(!cur) cur=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";
+        var next=cur==="dark"?"light":"dark";
+        document.documentElement.setAttribute("data-theme",next);
+        try{localStorage.setItem("vexpay-theme",next);}catch(e){}
+      });
+    })();
+
+    function api(method, path, body){
+      var opts={ method:method, headers:{ "Authorization":"Bearer "+apiKey } };
+      if(body){ opts.headers["Content-Type"]="application/json"; opts.body=JSON.stringify(body); }
+      return fetch(path, opts).then(function(r){
+        if(r.status===204) return {};
+        return r.text().then(function(t){
+          var data={}; try{ data=t?JSON.parse(t):{}; }catch(e){}
+          if(!r.ok){ throw new Error((data && data.error) ? data.error : ("HTTP "+r.status)); }
+          return data;
+        });
+      });
+    }
+
+    function setConnected(ok, text){
+      $("dot").className = "status-dot" + (ok ? " ok" : "");
+      $("connText").textContent = text;
+    }
+
+    function loadKey(){
+      try{ apiKey = localStorage.getItem(KEY_STORE) || ""; }catch(e){ apiKey=""; }
+      if(apiKey){ $("apiKey").value = apiKey; }
+    }
+
+    $("saveKey").addEventListener("click",function(){
+      apiKey = $("apiKey").value.trim();
+      try{ localStorage.setItem(KEY_STORE, apiKey); }catch(e){}
+      refresh();
+    });
+
+    function statusBadge(s){ return '<span class="badge b-'+s+'">'+s+'</span>'; }
+
+    function renderList(items){
+      var rows=$("rows"); rows.innerHTML="";
+      var counts={total:items.length,paid:0,open:0,expired:0};
+      items.forEach(function(inv){
+        if(inv.status==="paid"||inv.status==="overpaid") counts.paid++;
+        else if(inv.status==="expired") counts.expired++;
+        else counts.open++;
+        var tr=document.createElement("tr");
+        tr.innerHTML =
+          '<td class="mono">'+shorten(inv.id)+'</td>'+
+          '<td>'+inv.chain+'</td>'+
+          '<td class="mono">'+inv.amount+' '+inv.asset+'</td>'+
+          '<td>'+statusBadge(inv.status)+'</td>'+
+          '<td>'+inv.confirmations+'/'+inv.required_confirmations+'</td>'+
+          '<td class="muted">'+fmtTime(inv.created_at)+'</td>';
+        tr.addEventListener("click",function(){ openDetail(inv.id); });
+        rows.appendChild(tr);
+      });
+      $("s-total").textContent=counts.total;
+      $("s-paid").textContent=counts.paid;
+      $("s-open").textContent=counts.open;
+      $("s-expired").textContent=counts.expired;
+      $("empty").classList.toggle("hide", items.length>0);
+    }
+
+    function refresh(){
+      if(!apiKey){ setConnected(false,"enter an API key"); return; }
+      $("listErr").textContent="";
+      api("GET","/v1/invoices?limit=100").then(function(res){
+        setConnected(true,"connected");
+        renderList(res.data||[]);
+        $("updated").textContent="updated "+new Date().toLocaleTimeString();
+      }).catch(function(e){
+        setConnected(false,"error");
+        $("listErr").textContent="Could not load invoices: "+e.message;
+      });
+    }
+
+    // Detail modal
+    var current=null;
+    function openDetail(id){
+      $("d-err").textContent="";
+      api("GET","/v1/invoices/"+encodeURIComponent(id)).then(function(inv){
+        current=inv;
+        $("d-id").textContent=shorten(inv.id);
+        var kv=$("d-kv");
+        kv.innerHTML=
+          "<div>Status</div><div>"+statusBadge(inv.status)+"</div>"+
+          "<div>Amount</div><div class='mono'>"+inv.amount+" "+inv.asset+"</div>"+
+          "<div>Received</div><div class='mono'>"+inv.received+"</div>"+
+          "<div>Confirmations</div><div>"+inv.confirmations+" / "+inv.required_confirmations+"</div>"+
+          "<div>Address</div><div class='mono'>"+inv.receive_address+"</div>"+
+          "<div>Payment URI</div><div class='mono'>"+inv.payment_uri+"</div>"+
+          (inv.tx_hash?("<div>Tx</div><div class='mono'>"+inv.tx_hash+"</div>"):"")+
+          (inv.fiat_amount?("<div>Priced</div><div>"+inv.fiat_amount+" "+inv.fiat_currency+" @ "+inv.rate+"</div>"):"")+
+          "<div>Expires</div><div>"+fmtTime(inv.expires_at)+"</div>";
+        // Load QR with auth as a blob.
+        fetch("/v1/invoices/"+encodeURIComponent(inv.id)+"/qr?size=200",{headers:{"Authorization":"Bearer "+apiKey}})
+          .then(function(r){ return r.blob(); })
+          .then(function(b){ $("d-qr").src=URL.createObjectURL(b); });
+        $("d-pay").classList.toggle("hide", inv.chain!=="mock" || inv.status==="paid" || inv.status==="overpaid");
+        $("detailOverlay").classList.add("show");
+      }).catch(function(e){ alert("Failed to load invoice: "+e.message); });
+    }
+    $("d-close").addEventListener("click",function(){ $("detailOverlay").classList.remove("show"); });
+    $("d-copy").addEventListener("click",function(){
+      if(current) navigator.clipboard && navigator.clipboard.writeText(current.receive_address);
+    });
+    $("d-pay").addEventListener("click",function(){
+      if(!current) return;
+      $("d-err").textContent="";
+      api("POST","/v1/sandbox/pay/"+encodeURIComponent(current.id),{}).then(function(inv){
+        current=inv; openDetail(inv.id); refresh();
+      }).catch(function(e){ $("d-err").textContent=e.message; });
+    });
+
+    // Create modal
+    $("newBtn").addEventListener("click",function(){ $("c-err").textContent=""; $("createOverlay").classList.add("show"); });
+    $("c-cancel").addEventListener("click",function(){ $("createOverlay").classList.remove("show"); });
+    $("c-mode").addEventListener("change",function(){
+      var fiat=this.value==="fiat";
+      $("c-fiat").classList.toggle("hide",!fiat);
+      $("c-crypto").classList.toggle("hide",fiat);
+    });
+    $("c-submit").addEventListener("click",function(){
+      $("c-err").textContent="";
+      var body={ chain:$("c-chain").value };
+      if($("c-mode").value==="fiat"){
+        body.fiat_currency=$("c-fiatcur").value.trim();
+        body.fiat_amount=$("c-fiatamt").value.trim();
+      } else {
+        body.asset=$("c-asset").value.trim();
+        body.amount=$("c-amount").value.trim();
+      }
+      var xpub=$("c-xpub").value.trim();
+      if(xpub) body.wallet={ xpub:xpub };
+      api("POST","/v1/invoices",body).then(function(inv){
+        $("createOverlay").classList.remove("show");
+        refresh(); openDetail(inv.id);
+      }).catch(function(e){ $("c-err").textContent=e.message; });
+    });
+
+    $("refresh").addEventListener("click",refresh);
+    function setupAuto(){
+      if(timer){ clearInterval(timer); timer=null; }
+      if($("auto").checked){ timer=setInterval(function(){ if(apiKey) refresh(); },10000); }
+    }
+    $("auto").addEventListener("change",setupAuto);
+
+    // Close modals on overlay click.
+    document.querySelectorAll(".overlay").forEach(function(o){
+      o.addEventListener("click",function(e){ if(e.target===o) o.classList.remove("show"); });
+    });
+
+    loadKey();
+    setupAuto();
+    if(apiKey) refresh(); else setConnected(false,"enter an API key");
+  </script>
+</body>
+</html>

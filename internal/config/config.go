@@ -32,6 +32,8 @@ type Config struct {
 	// WatchInterval is how often the watcher polls open invoices.
 	WatchInterval time.Duration
 
+	// EnableDashboard serves the embedded admin UI at /dashboard/.
+	EnableDashboard bool
 	// EnableSandbox registers the mock chain and payment simulator.
 	EnableSandbox bool
 	// SandboxConfirmations is how many confirmations a sandbox invoice needs.
@@ -70,6 +72,7 @@ func Default() Config {
 		InvoiceExpiry:         15 * time.Minute,
 		RequestTimeout:        30 * time.Second,
 		WatchInterval:         15 * time.Second,
+		EnableDashboard:       true,
 		EnableSandbox:         true,
 		SandboxConfirmations:  1,
 		EnableBitcoin:         true,
@@ -120,6 +123,7 @@ func Load() (Config, error) {
 		}
 		c.WatchInterval = d
 	}
+	c.EnableDashboard = boolEnv("ENABLE_DASHBOARD", c.EnableDashboard)
 	c.EnableSandbox = boolEnv("ENABLE_SANDBOX", c.EnableSandbox)
 	if v := env("SANDBOX_CONFIRMATIONS"); v != "" {
 		n, err := strconv.Atoi(v)
