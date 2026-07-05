@@ -1,0 +1,271 @@
+openapi: 3.0.3
+info:
+  title: VexPay API
+  version: 0.1.0
+  description: >
+    Self-hosted, non-custodial crypto payment gateway. Create invoices, receive payments
+    directly to your own wallet, and get notified via signed webhooks. All monetary amounts are
+    exact decimal strings.
+  license:
+    name: AGPL-3.0
+    url: https://www.gnu.org/licenses/agpl-3.0.txt
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Invoices
+  - name: Sandbox
+  - name: System
+
+paths:
+  /healthz:
+    get:
+      tags: [System]
+      summary: Liveness probe
+      security: []
+      responses:
+        "200":
+          description: Service is up
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  env: { type: string, example: production }
+
+  /readyz:
+    get:
+      tags: [System]
+      summary: Readiness probe (dependencies reachable)
+      security: []
+      responses:
+        "200": { description: Ready }
+        "503": { description: A dependency is unavailable }
+
+  /version:
+    get:
+      tags: [System]
+      summary: Build information
+      security: []
+      responses:
+        "200":
+          description: Version info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version: { type: string }
+                  commit: { type: string }
+                  built: { type: string }
+
+  /v1/invoices:
+    post:
+      tags: [Invoices]
+      summary: Create an invoice
+      description: >
+        Provide either an explicit crypto `amount` (with its `asset`) or a fiat price via
+        `fiat_currency` + `fiat_amount`, in which case the gateway locks the exchange rate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInvoiceRequest"
+      responses:
+        "201":
+          description: Invoice created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Invoice" }
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+    get:
+      tags: [Invoices]
+      summary: List invoices
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20, maximum: 100 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: A page of invoices
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Invoice" }
+
+  /v1/invoices/{id}:
+    get:
+      tags: [Invoices]
+      summary: Fetch an invoice
+      parameters:
+        - $ref: "#/components/parameters/InvoiceId"
+      responses:
+        "200":
+          description: The invoice
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Invoice" }
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /v1/invoices/{id}/qr:
+    get:
+      tags: [Invoices]
+      summary: QR code for the invoice payment URI
+      parameters:
+        - $ref: "#/components/parameters/InvoiceId"
+        - name: size
+          in: query
+          description: PNG width/height in pixels (clamped 64–1024)
+          schema: { type: integer, default: 256 }
+      responses:
+        "200":
+          description: PNG image
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /v1/sandbox/pay/{id}:
+    post:
+      tags: [Sandbox]
+      summary: Simulate a payment (sandbox API keys only)
+      parameters:
+        - $ref: "#/components/parameters/InvoiceId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SandboxPayRequest" }
+      responses:
+        "200":
+          description: The updated invoice
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Invoice" }
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: "API key as a Bearer token, or the X-API-Key header."
+
+  parameters:
+    InvoiceId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, example: inv_9f2c... }
+
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+
+    WalletConfig:
+      type: object
+      description: Watch-only material for the chain (only the relevant fields are needed).
+      properties:
+        xpub: { type: string, description: Account extended public key (UTXO chains) }
+        address: { type: string, description: Receive address (account-based chains) }
+        view_key: { type: string, description: View key (Monero) }
+        primary_address: { type: string, description: Primary address (Monero) }
+
+    CreateInvoiceRequest:
+      type: object
+      required: [chain]
+      properties:
+        chain:
+          type: string
+          description: Chain id, e.g. "bitcoin", "bitcoin-testnet", "mock".
+          example: bitcoin
+        asset:
+          type: string
+          description: Required when `amount` is set, e.g. "BTC".
+          example: BTC
+        amount:
+          type: string
+          description: Crypto amount as a decimal string (mutually exclusive with fiat pricing).
+          example: "0.005"
+        fiat_currency:
+          type: string
+          example: EUR
+        fiat_amount:
+          type: string
+          example: "25"
+        wallet:
+          $ref: "#/components/schemas/WalletConfig"
+        metadata:
+          type: object
+          additionalProperties: { type: string }
+
+    SandboxPayRequest:
+      type: object
+      properties:
+        amount: { type: string, description: "Defaults to the full invoice amount." }
+        confirmations: { type: integer, description: "Defaults to the required confirmations." }
+        tx_hash: { type: string }
+
+    Invoice:
+      type: object
+      properties:
+        id: { type: string }
+        merchant_id: { type: string }
+        chain: { type: string }
+        asset: { type: string }
+        amount: { type: string }
+        status:
+          type: string
+          enum: [pending, underpaid, confirming, paid, overpaid, expired]
+        received: { type: string }
+        confirmations: { type: integer }
+        required_confirmations: { type: integer }
+        receive_address: { type: string }
+        payment_uri: { type: string }
+        tx_hash: { type: string }
+        fiat_currency: { type: string }
+        fiat_amount: { type: string }
+        rate: { type: string }
+        metadata:
+          type: object
+          additionalProperties: { type: string }
+        created_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        paid_at: { type: string, format: date-time, nullable: true }
+        updated_at: { type: string, format: date-time }
+
+  headers:
+    VexPay-Signature:
+      description: "HMAC-SHA256 webhook signature, format: t=<unix>,v1=<hex>."
+      schema: { type: string }
