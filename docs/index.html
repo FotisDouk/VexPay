@@ -6,118 +6,370 @@
   <title>VexPay Documentation</title>
   <style>
     :root {
-      --bg: #ffffff;
-      --fg: #14171f;
-      --muted: #5b6472;
-      --accent: #4f46e5;
-      --card: #f6f7f9;
-      --border: #e4e7ec;
-      --code-bg: #f0f1f4;
+      --bg: #ffffff; --fg: #14171f; --muted: #5b6472; --accent: #4f46e5;
+      --card: #f6f7f9; --border: #e4e7ec; --code-bg: #f4f5f7; --code-fg: #24292f;
+      --sidebar: #fbfbfc; --pill: #eef0ff;
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #0e1116;
-        --fg: #e7eaf0;
-        --muted: #9aa4b2;
-        --accent: #8b85f7;
-        --card: #161a21;
-        --border: #262c36;
-        --code-bg: #1b2028;
+        --bg: #0e1116; --fg: #e7eaf0; --muted: #9aa4b2; --accent: #8b85f7;
+        --card: #161a21; --border: #262c36; --code-bg: #12161c; --code-fg: #d7dce4;
+        --sidebar: #0b0e13; --pill: #1c2030;
       }
     }
+    :root[data-theme="light"] {
+      --bg: #ffffff; --fg: #14171f; --muted: #5b6472; --accent: #4f46e5;
+      --card: #f6f7f9; --border: #e4e7ec; --code-bg: #f4f5f7; --code-fg: #24292f;
+      --sidebar: #fbfbfc; --pill: #eef0ff;
+    }
+    :root[data-theme="dark"] {
+      --bg: #0e1116; --fg: #e7eaf0; --muted: #9aa4b2; --accent: #8b85f7;
+      --card: #161a21; --border: #262c36; --code-bg: #12161c; --code-fg: #d7dce4;
+      --sidebar: #0b0e13; --pill: #1c2030;
+    }
     * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     body {
-      margin: 0;
-      font: 16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--fg);
+      margin: 0; background: var(--bg); color: var(--fg);
+      font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
-    header {
-      padding: 3rem 1.5rem 2rem;
-      max-width: 860px;
-      margin: 0 auto;
-    }
-    .logo { font-weight: 800; font-size: 1.6rem; letter-spacing: -0.02em; }
-    .logo span { color: var(--accent); }
-    .tag { color: var(--muted); margin-top: .25rem; }
-    main { max-width: 860px; margin: 0 auto; padding: 0 1.5rem 4rem; }
-    h2 { margin-top: 2.5rem; font-size: 1.25rem; letter-spacing: -0.01em; }
-    a { color: var(--accent); }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-    .card {
-      background: var(--card);
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .875em; }
+    :not(pre) > code {
+      background: var(--code-bg); padding: .12em .4em; border-radius: 5px;
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1rem 1.1rem;
     }
-    .card h3 { margin: 0 0 .35rem; font-size: 1rem; }
-    .card p { margin: 0; color: var(--muted); font-size: .9rem; }
     pre {
-      background: var(--code-bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1rem;
-      overflow-x: auto;
+      background: var(--code-bg); color: var(--code-fg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1rem 1.1rem; overflow-x: auto; font-size: .875rem; line-height: 1.55;
     }
-    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .9em; }
-    .badge {
-      display: inline-block;
-      background: var(--code-bg);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: .15rem .7rem;
-      font-size: .8rem;
-      color: var(--muted);
+
+    .layout { display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar {
+      width: 264px; flex: 0 0 264px; background: var(--sidebar);
+      border-right: 1px solid var(--border); position: sticky; top: 0; height: 100vh;
+      overflow-y: auto; padding: 1.5rem 1rem 3rem;
     }
-    footer { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; color: var(--muted); font-size: .85rem; border-top: 1px solid var(--border); }
+    .brand { font-weight: 800; font-size: 1.35rem; letter-spacing: -.02em; padding: 0 .6rem; }
+    .brand span { color: var(--accent); }
+    .brand small { display: block; font-weight: 500; font-size: .72rem; color: var(--muted); letter-spacing: 0; margin-top: .15rem; }
+    nav { margin-top: 1.5rem; }
+    nav .group { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 1.2rem .6rem .4rem; }
+    nav a {
+      display: block; padding: .38rem .6rem; border-radius: 7px; color: var(--fg);
+      font-size: .92rem; line-height: 1.3;
+    }
+    nav a:hover { background: var(--card); text-decoration: none; }
+    nav a.active { background: var(--pill); color: var(--accent); font-weight: 600; }
+
+    /* Content */
+    main { flex: 1 1 auto; min-width: 0; }
+    .content { max-width: 820px; margin: 0 auto; padding: 2.5rem 2rem 6rem; }
+    section { scroll-margin-top: 1.5rem; padding-top: 1rem; }
+    section + section { border-top: 1px solid var(--border); margin-top: 2.5rem; }
+    h1 { font-size: 2rem; letter-spacing: -.025em; margin: .2rem 0 .4rem; }
+    h2 { font-size: 1.4rem; letter-spacing: -.02em; margin: 1.6rem 0 .6rem; }
+    h3 { font-size: 1.05rem; margin: 1.4rem 0 .4rem; }
+    p, li { color: var(--fg); }
+    .lead { font-size: 1.1rem; color: var(--muted); }
+    .pill { display: inline-block; background: var(--pill); color: var(--accent); border-radius: 999px; padding: .15rem .7rem; font-size: .78rem; font-weight: 600; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .9rem; display: block; overflow-x: auto; }
+    th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+    td code { white-space: nowrap; }
+
+    .note { border-left: 3px solid var(--accent); background: var(--card); border-radius: 0 8px 8px 0; padding: .8rem 1rem; margin: 1rem 0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .8rem; margin: 1rem 0; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: .9rem 1rem; }
+    .card h3 { margin: 0 0 .3rem; font-size: .98rem; }
+    .card p { margin: 0; color: var(--muted); font-size: .86rem; }
+    .method { font-weight: 700; font-size: .8rem; padding: .1rem .45rem; border-radius: 5px; margin-right: .4rem; }
+    .get { background: #1f7a3d22; color: #2e9c54; }
+    .post { background: #4f46e522; color: var(--accent); }
+
+    .topbar { display: none; align-items: center; justify-content: space-between; padding: .8rem 1rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 20; }
+    .themebtn { cursor: pointer; background: var(--card); border: 1px solid var(--border); color: var(--fg); border-radius: 7px; padding: .3rem .6rem; font-size: .85rem; }
+    #menu { display: none; cursor: pointer; background: none; border: 1px solid var(--border); color: var(--fg); border-radius: 7px; padding: .3rem .55rem; }
+
+    footer { color: var(--muted); font-size: .85rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+
+    @media (max-width: 860px) {
+      .topbar { display: flex; }
+      #menu { display: inline-block; }
+      .sidebar { position: fixed; z-index: 30; left: 0; top: 0; transform: translateX(-100%); transition: transform .2s ease; box-shadow: 0 0 40px #0006; }
+      .sidebar.open { transform: translateX(0); }
+      .content { padding: 1.5rem 1.2rem 5rem; }
+    }
   </style>
 </head>
 <body>
-  <header>
-    <div class="logo">Vex<span>Pay</span></div>
-    <p class="tag">Self-hosted, non-custodial crypto payments — fast, secure, and easy.</p>
-    <p><span class="badge">Early development</span></p>
-  </header>
+  <div class="topbar">
+    <button id="menu" aria-label="Toggle navigation">☰</button>
+    <div class="brand" style="font-size:1.1rem;padding:0">Vex<span>Pay</span></div>
+    <button class="themebtn" data-toggle-theme>◐ Theme</button>
+  </div>
 
-  <main>
-    <p>
-      VexPay is a payment gateway you run on your own server. Point it at your own wallet, get
-      an API key, and start accepting cryptocurrency. Funds go <strong>directly to your
-      wallet</strong> — VexPay never holds your private keys or your money.
-    </p>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">Vex<span>Pay</span><small>Non-custodial crypto payments</small></div>
+      <nav id="nav">
+        <div class="group">Getting started</div>
+        <a href="#introduction">Introduction</a>
+        <a href="#quickstart">Quickstart</a>
+        <a href="#self-hosting">Self-hosting</a>
+        <a href="#configuration">Configuration</a>
+        <div class="group">Using VexPay</div>
+        <a href="#wallets">Wallet setup</a>
+        <a href="#api">API reference</a>
+        <a href="#webhooks">Webhooks</a>
+        <a href="#sandbox">Sandbox &amp; testing</a>
+        <div class="group">Reference</div>
+        <a href="#security">Security model</a>
+        <a href="#sdks">SDKs</a>
+        <div class="group" style="margin-top:1.4rem"><button class="themebtn" data-toggle-theme style="width:100%">◐ Toggle theme</button></div>
+      </nav>
+    </aside>
 
-    <h2>Quick start</h2>
-    <pre><code>git clone https://github.com/vexarnetwork/vexpay
+    <main>
+      <div class="content">
+        <section id="introduction">
+          <span class="pill">Early development</span>
+          <h1>VexPay documentation</h1>
+          <p class="lead">Accept cryptocurrency on your own server, non-custodially. VexPay
+          derives a receive address per invoice, watches the chain, and confirms payments
+          automatically — funds go straight to your wallet. VexPay never holds your keys or
+          your money.</p>
+          <div class="grid">
+            <div class="card"><h3>Non-custodial</h3><p>You supply an xpub/address/view-key. No private keys on the server.</p></div>
+            <div class="card"><h3>Self-hosted</h3><p>One Go binary or Docker container. SQLite by default.</p></div>
+            <div class="card"><h3>Any language</h3><p>A clean REST API and a flagship PHP SDK.</p></div>
+            <div class="card"><h3>Real commerce</h3><p>Fiat pricing, locked rates, signed webhooks, QR codes.</p></div>
+          </div>
+          <p class="note">This site is a single self-contained HTML file — no build step, no
+          external services. Open it in a browser or serve the <code>docs/</code> folder with
+          any static file server.</p>
+        </section>
+
+        <section id="quickstart">
+          <h2>Quickstart</h2>
+          <p>Run the gateway (requires Go 1.21+, or use Docker below):</p>
+<pre><code>git clone https://github.com/vexarnetwork/vexpay
 cd vexpay
-go run ./cmd/vexpay
+go run ./cmd/vexpay</code></pre>
+          <p>In development a sandbox API key is generated and printed to the log. Create an
+          invoice, then simulate paying it — no real coins needed:</p>
+<pre><code>KEY="vpk_test_..."   # from the startup log
 
-curl http://localhost:8080/healthz</code></pre>
+# Create a sandbox invoice
+curl -s -X POST http://localhost:8080/v1/invoices \
+  -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+  -d '{"chain":"mock","asset":"tBTC","amount":"0.0025"}'
 
-    <h2>Guides</h2>
-    <div class="grid">
-      <div class="card"><h3>Self-hosting</h3><p>Run with Docker or the bare binary.</p></div>
-      <div class="card"><h3>Wallet setup</h3><p>Connect your xpub, address, or view key per chain.</p></div>
-      <div class="card"><h3>API reference</h3><p>The REST API, generated from the OpenAPI spec.</p></div>
-      <div class="card"><h3>Webhooks</h3><p>Verify signatures and handle payment events.</p></div>
-      <div class="card"><h3>Sandbox &amp; testing</h3><p>Simulate payments without spending real coins.</p></div>
-      <div class="card"><h3>Security model</h3><p>Why non-custodial means a smaller blast radius.</p></div>
-    </div>
+# Simulate the payment (sandbox only)
+curl -s -X POST http://localhost:8080/v1/sandbox/pay/&lt;invoice-id&gt; \
+  -H "Authorization: Bearer $KEY"</code></pre>
+          <p>The invoice transitions to <code>paid</code> and a signed webhook fires (if
+          configured).</p>
+        </section>
 
-    <h2>Documentation is a first-class feature</h2>
-    <p>
-      This site is plain static HTML/CSS/JS with no build step. Open it directly in a browser,
-      or serve the <code>docs/</code> folder with any static file server. The pages above are
-      placeholders that fill in as VexPay grows.
-    </p>
-  </main>
+        <section id="self-hosting">
+          <h2>Self-hosting</h2>
+          <h3>Docker (recommended)</h3>
+<pre><code>cd deploy
+cp vexpay.env.example vexpay.env   # then edit vexpay.env
+docker compose up -d</code></pre>
+          <p>The SQLite database is persisted in a named volume, so invoices survive restarts.</p>
+          <h3>Bare binary</h3>
+<pre><code>go build -o vexpay ./cmd/vexpay
+VEXPAY_ENV=production \
+VEXPAY_PUBLIC_URL=https://pay.example.com \
+VEXPAY_ADMIN_SESSION_SECRET=$(openssl rand -hex 32) \
+./vexpay</code></pre>
+          <p class="note">In production, <code>VEXPAY_PUBLIC_URL</code> must use HTTPS and
+          <code>VEXPAY_ADMIN_SESSION_SECRET</code> is required. Put VexPay behind a TLS-terminating
+          reverse proxy, or supply certificates.</p>
+        </section>
 
-  <footer>
-    VexPay is licensed under AGPL-3.0. &nbsp;·&nbsp; A VexarNetwork project.
-  </footer>
+        <section id="configuration">
+          <h2>Configuration</h2>
+          <p>All settings come from <code>VEXPAY_</code>-prefixed environment variables.</p>
+          <table>
+            <tr><th>Variable</th><th>Default</th><th>Description</th></tr>
+            <tr><td><code>VEXPAY_ENV</code></td><td>development</td><td>development / sandbox / production</td></tr>
+            <tr><td><code>VEXPAY_ADDR</code></td><td>:8080</td><td>HTTP listen address</td></tr>
+            <tr><td><code>VEXPAY_PUBLIC_URL</code></td><td>localhost</td><td>Externally reachable base URL</td></tr>
+            <tr><td><code>VEXPAY_DATABASE_URL</code></td><td>sqlite:vexpay.db</td><td><code>sqlite:&lt;path&gt;</code> or <code>postgres://…</code></td></tr>
+            <tr><td><code>VEXPAY_INVOICE_EXPIRY</code></td><td>15m</td><td>Invoice / locked-rate window</td></tr>
+            <tr><td><code>VEXPAY_WATCH_INTERVAL</code></td><td>15s</td><td>How often open invoices are polled</td></tr>
+            <tr><td><code>VEXPAY_BTC_EXPLORER_URL</code></td><td>mempool.space</td><td>Bitcoin explorer API, or your own node</td></tr>
+            <tr><td><code>VEXPAY_COINGECKO_URL</code></td><td>public</td><td>Price API for fiat pricing</td></tr>
+            <tr><td><code>VEXPAY_WEBHOOK_URL</code></td><td>—</td><td>Endpoint that receives signed events</td></tr>
+            <tr><td><code>VEXPAY_WEBHOOK_SECRET</code></td><td>—</td><td>HMAC secret for webhook signatures</td></tr>
+            <tr><td><code>VEXPAY_API_KEY</code></td><td>—</td><td>Seed a live API key</td></tr>
+          </table>
+        </section>
+
+        <section id="wallets">
+          <h2>Wallet setup</h2>
+          <p>VexPay is watch-only. How you connect a wallet depends on the chain — but in every
+          case you provide public material only, never a private key.</p>
+          <h3>Bitcoin</h3>
+          <p>Provide an <strong>account extended public key</strong> (xpub/zpub) in the invoice's
+          <code>wallet.xpub</code>. VexPay derives a fresh native-SegWit address per invoice at
+          <code>m/0/index</code>. Funds arrive directly in your wallet; because each invoice gets
+          its own address, matching is exact.</p>
+<pre><code>{
+  "chain": "bitcoin",
+  "asset": "BTC",
+  "amount": "0.005",
+  "wallet": { "xpub": "zpub6r..." }
+}</code></pre>
+          <div class="note">Roadmap: account-based chains (ETH/EVM, Tron) will use a single
+          receive address plus a unique per-invoice amount, and Monero will use a view key with a
+          subaddress per invoice.</div>
+        </section>
+
+        <section id="api">
+          <h2>API reference</h2>
+          <p>Authenticate every request with <code>Authorization: Bearer &lt;api-key&gt;</code>
+          (or the <code>X-API-Key</code> header). The full machine-readable spec is
+          <code>api/openapi.yaml</code>.</p>
+          <table>
+            <tr><th>Endpoint</th><th>Description</th></tr>
+            <tr><td><span class="method post">POST</span><code>/v1/invoices</code></td><td>Create an invoice (crypto- or fiat-priced)</td></tr>
+            <tr><td><span class="method get">GET</span><code>/v1/invoices/{id}</code></td><td>Fetch an invoice and its live status</td></tr>
+            <tr><td><span class="method get">GET</span><code>/v1/invoices/{id}/qr</code></td><td>PNG QR of the payment URI (<code>?size</code>)</td></tr>
+            <tr><td><span class="method get">GET</span><code>/v1/invoices</code></td><td>List invoices (<code>?limit</code>, <code>?offset</code>)</td></tr>
+            <tr><td><span class="method post">POST</span><code>/v1/sandbox/pay/{id}</code></td><td>Simulate a payment (sandbox keys only)</td></tr>
+          </table>
+          <h3>Fiat-priced invoice</h3>
+          <p>Omit <code>asset</code>/<code>amount</code> and give a fiat price; VexPay fetches and
+          locks the rate, rounding up so you are never underpaid.</p>
+<pre><code>curl -X POST http://localhost:8080/v1/invoices \
+  -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+  -d '{"chain":"bitcoin","fiat_currency":"EUR","fiat_amount":"25","wallet":{"xpub":"zpub..."}}'</code></pre>
+          <h3>Invoice status values</h3>
+          <p><code>pending</code> · <code>underpaid</code> · <code>confirming</code> ·
+          <code>paid</code> · <code>overpaid</code> · <code>expired</code></p>
+        </section>
+
+        <section id="webhooks">
+          <h2>Webhooks</h2>
+          <p>When an invoice changes state, VexPay POSTs a signed JSON event to your
+          <code>VEXPAY_WEBHOOK_URL</code>. Delivery retries with backoff until it gets a 2xx.</p>
+          <p>Each request carries a <code>VexPay-Signature: t=&lt;unix&gt;,v1=&lt;hex&gt;</code>
+          header. Verify it by computing
+          <code>HMAC-SHA256(secret, "&lt;t&gt;." + rawBody)</code> and comparing in constant
+          time, then reject timestamps outside your tolerance to prevent replay.</p>
+<pre><code>// PHP (via the SDK)
+$event = \VexPay\Webhook::constructEvent($payload, $header, $secret);
+if ($event-&gt;invoice-&gt;isPaid()) { /* fulfil order */ }</code></pre>
+          <div class="note">Always verify the signature before trusting the payload, and
+          acknowledge quickly (2xx) so retries stop.</div>
+        </section>
+
+        <section id="sandbox">
+          <h2>Sandbox &amp; testing</h2>
+          <p>The <code>mock</code> chain lets you exercise the entire flow — create, receive,
+          confirm, settle, webhook — without spending real coins. Sandbox keys start with
+          <code>vpk_test_</code> and only they may call the simulator.</p>
+<pre><code># Fully pay (default): confirmations = required, amount = full
+curl -X POST .../v1/sandbox/pay/&lt;id&gt; -H "Authorization: Bearer $KEY"
+
+# Partial / custom
+curl -X POST .../v1/sandbox/pay/&lt;id&gt; -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" -d '{"amount":"0.001","confirmations":0}'</code></pre>
+        </section>
+
+        <section id="security">
+          <h2>Security model</h2>
+          <ul>
+            <li><strong>Non-custodial by design.</strong> No private keys and no funds live on the
+            server, so the most valuable target simply isn't there.</li>
+            <li><strong>Fail closed.</strong> If a rate or confirmation is uncertain, an invoice is
+            never marked paid.</li>
+            <li><strong>Exact money.</strong> Amounts are integers in the smallest unit — no
+            floating point in balances or comparisons.</li>
+            <li><strong>Authenticated webhooks.</strong> HMAC-SHA256 signatures with timestamped
+            replay protection.</li>
+            <li><strong>Hashed API keys.</strong> Stored as SHA-256, compared in constant time.</li>
+          </ul>
+          <p>Found a vulnerability? See <code>SECURITY.md</code> for private disclosure.</p>
+        </section>
+
+        <section id="sdks">
+          <h2>SDKs</h2>
+          <p>The REST API is language-agnostic; the PHP SDK is the flagship client.</p>
+<pre><code>composer require vexpay/sdk</code></pre>
+<pre><code>$vexpay  = new \VexPay\Client('https://pay.example.com', 'vpk_live_...');
+$invoice = $vexpay-&gt;createInvoice([
+    'chain' =&gt; 'bitcoin', 'asset' =&gt; 'BTC', 'amount' =&gt; '0.005',
+    'wallet' =&gt; ['xpub' =&gt; 'zpub...'],
+]);
+echo $invoice-&gt;paymentUri;</code></pre>
+          <p>See <code>sdks/php/README.md</code> for the full SDK guide.</p>
+        </section>
+
+        <footer>
+          VexPay is licensed under AGPL-3.0. · A VexarNetwork project. · This documentation is a
+          single static HTML file with no build step.
+        </footer>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Theme toggle (persists to localStorage; respects OS default otherwise).
+    (function () {
+      var saved = null;
+      try { saved = localStorage.getItem("vexpay-theme"); } catch (e) {}
+      if (saved) document.documentElement.setAttribute("data-theme", saved);
+      function toggle() {
+        var cur = document.documentElement.getAttribute("data-theme");
+        if (!cur) {
+          cur = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
+        var next = cur === "dark" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", next);
+        try { localStorage.setItem("vexpay-theme", next); } catch (e) {}
+      }
+      document.querySelectorAll("[data-toggle-theme]").forEach(function (b) {
+        b.addEventListener("click", toggle);
+      });
+    })();
+
+    // Mobile nav toggle.
+    (function () {
+      var menu = document.getElementById("menu");
+      var sidebar = document.getElementById("sidebar");
+      if (menu) menu.addEventListener("click", function () { sidebar.classList.toggle("open"); });
+      sidebar.querySelectorAll("nav a").forEach(function (a) {
+        a.addEventListener("click", function () { sidebar.classList.remove("open"); });
+      });
+    })();
+
+    // Scrollspy: highlight the nav link for the section in view.
+    (function () {
+      var links = Array.prototype.slice.call(document.querySelectorAll("#nav a[href^='#']"));
+      var map = {};
+      links.forEach(function (a) { map[a.getAttribute("href").slice(1)] = a; });
+      var sections = links.map(function (a) { return document.getElementById(a.getAttribute("href").slice(1)); }).filter(Boolean);
+
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            links.forEach(function (l) { l.classList.remove("active"); });
+            var active = map[e.target.id];
+            if (active) active.classList.add("active");
+          }
+        });
+      }, { rootMargin: "-10% 0px -80% 0px", threshold: 0 });
+      sections.forEach(function (s) { obs.observe(s); });
+    })();
+  </script>
 </body>
 </html>
