@@ -1,0 +1,28 @@
+{
+    "name": "vexpay/sdk",
+    "description": "Official PHP SDK for VexPay — self-hosted, non-custodial crypto payments.",
+    "type": "library",
+    "license": "AGPL-3.0-or-later",
+    "keywords": ["crypto", "payments", "bitcoin", "vexpay", "non-custodial"],
+    "require": {
+        "php": ">=8.1",
+        "ext-curl": "*",
+        "ext-json": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "VexPay\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "VexPay\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    }
+}
